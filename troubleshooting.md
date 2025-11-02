@@ -28,9 +28,9 @@ RAPIDAPI_KEY=tu_clave_de_rapidapi
 
 **Solución:**
 
-*   **Verifica los puertos:** Asegúrate de que los puertos utilizados por los servicios (ej. 8000, 5432, 15672) no estén en uso por otras aplicaciones.
-*   **Revisa los registros:** Utiliza el comando `docker-compose logs <nombre_del_servicio>` para ver los registros del contenedor que falla y obtener más información sobre el error.
-*   **Aumenta los recursos de Docker:** Si estás en un entorno con recursos limitados, considera aumentar la memoria o la CPU asignada a Docker.
+- **Verifica los puertos:** Asegúrate de que los puertos utilizados por los servicios (ej. 8000, 5432, 15672) no estén en uso por otras aplicaciones.
+- **Revisa los registros:** Utiliza el comando `docker-compose logs <nombre_del_servicio>` para ver los registros del contenedor que falla y obtener más información sobre el error.
+- **Aumenta los recursos de Docker:** Si estás en un entorno con recursos limitados, considera aumentar la memoria o la CPU asignada a Docker.
 
 ## 3. No se Muestran Datos en Grafana
 

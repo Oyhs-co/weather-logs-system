@@ -1,0 +1,32 @@
+groups:
+  - name: weather
+    interval: 15s
+    rules:
+      # métrica derivada para usar en Grafana
+      - record: weather:queue_lag
+        expr: rabbitmq_queue_messages{queue="weather.queue"}
+
+      # alertas
+      - alert: HighTemperature
+        expr: weather_logs_temp > 35          # suponiéndolo exportado por consumer
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Estación {{ $labels.station }} > 35 °C"
+
+      - alert: ConsumerDown
+        expr: up{job="consumer"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consumer caído"
+
+      - alert: QueueLag
+        expr: weather:queue_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cola con > 1 k mensajes sin consumir"

@@ -1,9 +1,10 @@
 import os
 import json
 import logging
+import threading
 import psycopg2
 import pika
-from prometheus_client import start_http_server, Counter
+from prometheus_client import start_http_server, Counter, Gauge
 
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
@@ -19,6 +20,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 # métricas
 INSERT_COUNTER = Counter("weather_inserted_rows", "Total rows inserted")
 INVALID_COUNTER = Counter("weather_invalid_msg", "Total invalid messages")
+# gauge con la última temperatura por estación (etiqueta 'station')
+TEMP_GAUGE = Gauge("weather_logs_temp", "Última temperatura registrada", ["station"]) 
 
 def pg_conn():
     return psycopg2.connect(host=POSTGRES_HOST, dbname=POSTGRES_DB,
@@ -36,7 +39,14 @@ def insert(msg):
     with pg_conn() as conn, conn.cursor() as cur:
         cur.execute(sql, msg)
         conn.commit()
+        # incrementar contador por filas realmente insertadas
         INSERT_COUNTER.inc(cur.rowcount)
+        # actualizar gauge de temperatura por estación si hay fila insertada
+        try:
+            if cur.rowcount > 0 and msg.get("station") and msg.get("temp") is not None:
+                TEMP_GAUGE.labels(station=msg["station"]).set(float(msg["temp"]))
+        except Exception:
+            logging.exception("error actualizando TEMP_GAUGE")
 
 def on_message(ch, method, properties, body):
     try:
@@ -52,7 +62,11 @@ def on_message(ch, method, properties, body):
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 def main():
-    start_http_server(PROM_PORT)
+    # Iniciar servidor HTTP Prometheus en thread separado
+    prom_thread = threading.Thread(target=lambda: start_http_server(PROM_PORT), daemon=True)
+    prom_thread.start()
+    logging.info(f"Prometheus metrics server started on port {PROM_PORT}")
+    
     creds = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
     conn  = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_HOST, credentials=creds))
     ch    = conn.channel()

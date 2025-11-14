@@ -4,8 +4,13 @@ import io
 import csv
 from datetime import datetime
 from fastapi import FastAPI, Query, Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 app = FastAPI(title="Weather-Logs API")
+
+# Métricas Prometheus
+REQUESTS_TOTAL = Counter("api_requests_total", "Total de requests a la API", ["endpoint", "method"])
+REQUEST_DURATION = Histogram("api_request_duration_seconds", "Duración de requests", ["endpoint"])
 
 PG_HOST = os.getenv("POSTGRES_HOST", "postgres")
 PG_DB   = os.getenv("POSTGRES_DB", "weather")
@@ -63,3 +68,11 @@ def health():
         cur.execute("SELECT count(*) FROM weather_logs")
         count = cur.fetchone()[0]
     return {"status": "ok", "rows": count}
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )

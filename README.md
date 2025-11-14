@@ -56,8 +56,8 @@ El sistema está compuesto por los siguientes servicios:
 1.  **Clona el repositorio:**
 
     ```bash
-    git clone https://github.com/tu-usuario/tu-repositorio.git
-    cd tu-repositorio
+    git clone https://github.com/Oyhs-co/weather-logs-system
+    cd weather-logs-system
     ```
 
 2.  **Configura las variables de entorno:**
@@ -81,6 +81,40 @@ Para que el productor pueda obtener datos de la API de Meteostat, es necesario c
     ```
     RAPIDAPI_KEY=tu_clave_de_rapidapi
     ```
+
+    ## Configuración del Productor (Meteostat V1)
+
+    El productor obtiene datos de la API de Meteostat (vía RapidAPI). La llamada que utiliza sigue la especificación V1 y requiere los siguientes parámetros en la URL: `station`, `start`, `end`. Además se pueden ajustar opciones adicionales.
+
+    - **`STATION`**: Identificador de la estación (puede ser código ICAO como `LEMD` o el ID numérico, p. ej. `80022`).
+    - **`METEOSTAT_START`**: Fecha de inicio del periodo (YYYY-MM-DD). Si no se define, por defecto se usa la fecha actual.
+    - **`METEOSTAT_END`**: Fecha de fin del periodo (YYYY-MM-DD). Si no se define, por defecto se usa la fecha actual.
+    - **`METEOSTAT_TZ`**: Zona horaria según la base tz (opcional). Default: `UTC`.
+    - **`METEOSTAT_MODEL`**: Sustituir registros faltantes por modelo estadístico (opcional). Default: `true`.
+    - **`METEOSTAT_FREQ`**: Frecuencia temporal de los registros (opcional, para agregaciones personalizadas).
+    - **`METEOSTAT_UNITS`**: Sistema de unidades (`metric` o `imperial`). Default: `metric`.
+
+    Estos parámetros se pasan desde el archivo `.env` y se inyectan al contenedor `producer` a través de `docker-compose`.
+
+    Ejemplo mínimo de `.env` para el productor:
+
+    ```
+    # Producer / Meteostat
+    STATION=80022
+    METEOSTAT_START=2020-01-01
+    METEOSTAT_END=2020-01-01
+    METEOSTAT_TZ=Europe/Berlin
+    METEOSTAT_MODEL=true
+    METEOSTAT_UNITS=metric
+
+    # RapidAPI
+    RAPIDAPI_KEY=tu_clave_de_rapidapi
+    ```
+
+    Consejos:
+    - Para pedir siempre el último registro puedes usar `METEOSTAT_START` y `METEOSTAT_END` igual a la fecha actual o adaptar el productor para calcular un intervalo dinámico.
+    - No incluyas `.env` en repositorios públicos. Añade `.env` a tu `.gitignore` si aún no lo hiciste.
+
 
 ## Uso de la API
 
